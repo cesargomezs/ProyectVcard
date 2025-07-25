@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="./vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>::QR::</title>
+    <meta
+      name="description"
+      content="This HTML form allows users to enter their contact information (such as name, phone number, email, company, etc.) to automatically generate a QR code in vCard format. This QR code can be scanned by most mobile phones to add the contact directly to the address book."
+    />
+
+    <script src="/src/components/vcard/qrcode.min.js"></script>
+    <script src="https://kit.fontawesome.com/b512089a85.js" crossorigin="anonymous"></script>
+
+    <link rel="stylesheet" crossorigin href="./assets/index-VaYCM_el.css">
+  </head>
+  <body>
+    <div class="divVcard">
+      <h1 style="text-align: center;">vCard QR Code Generators</h1>
+        <br>
+      <p>
+        This HTML form allows users to enter their contact information (such as name, phone number, email, company, etc.) to automatically generate a QR code in vCard format. 
+        This QR code can be scanned by most mobile phones to add the contact directly to the address book.
+        <br>
+        <br>
+      </p>
+          <div class="divVcardForm">
+
+          <h2>Enter your contact information:</h2>
+        
+          <form id="vcard-form">
+        
+            <p class="label">Name:</p><br>
+            <input type="text" id="name" required><br>
+        
+            <p class="label">Organization:</p><br>
+            <input type="text" id="org"><br>
+            
+            <p class="label">Phone:</p><br>
+            <input type="text" id="phone"><br>
+
+            <p class="label">Email:</p><br>
+            <input type="email" id="email"><br>
+            
+            <p class="label">Address:</p><br>
+            <input type="text" id="address"><br>
+
+            <p class="label">Web site or Url:</p><br>
+            <input type="text" id="url"><br><br>
+
+            <button type="submit" class="btn primary"><i class="fa-solid fa-qrcode"></i>Submit</button><br>
+          </form>
+          <br>
+          <br>
+          <div id="qrcode" class="qrCode"></div>
+        </div>
+    </div>
+    <script src="/src/components/vcard/vcard.js"></script>
+    
+  </body>
+</html>
