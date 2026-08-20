@@ -1,13 +1,11 @@
 const express = require('express');
 const fs = require('fs');
-const path = require('path');
+const path = path = require('path');
 const cors = require('cors');
 
 const app = express();
-// Render asigna el puerto automáticamente, si no, usamos el 3000
 const PORT = process.env.PORT || 3000;
 
-// CORS permitido para cualquier origen
 app.use(cors({ origin: "*" }));
 app.use(express.json({ limit: '10mb' }));
 
@@ -23,25 +21,34 @@ app.post('/api/generar-vcf', (req, res) => {
     const fileName = `contacto_${Date.now()}.vcf`;
     const filePath = path.join(tempFolder, fileName);
 
-    let vCard = "BEGIN:VCARD\nVERSION:3.0\n";
-    vCard += `FN:${name}\nN:;${name};;;\n`;
-    if (org) vCard += `ORG:${org};\nTITLE:${org}\n`;
-    if (phone) vCard += `TEL;TYPE=CELL:${phone}\n`;
-    if (email) vCard += `EMAIL:${email}\n`;
-    if (address) vCard += `ADR:;;${address};;;;\n`;
-    if (url) vCard += `URL:${url}\n`;
-    if (photoBase64) vCard += `PHOTO;ENCODING=b;TYPE=JPEG:${photoBase64}\n`;
-    vCard += "END:VCARD";
+    // Usamos \r\n que es el estándar oficial de vCard para evitar conflictos en iOS
+    let vCard = "BEGIN:VCARD\r\nVERSION:3.0\r\n";
+    vCard += `FN:${name}\r\n`;
+    
+    // Arreglamos la estructura N (Apellido;Nombre;;;) para que iOS no mezcle campos
+    vCard += `N:;${name};;;\r\n`;
+    
+    if (org && org.trim() !== "") {
+        vCard += `ORG:${org.trim()}\r\n`;
+    }
+    
+    if (phone) vCard += `TEL;TYPE=CELL:${phone}\r\n`;
+    if (email) vCard += `EMAIL;TYPE=WORK:${email}\r\n`;
+    if (address) vCard += `ADR;TYPE=WORK:;;${address};;;;\r\n`;
+    if (url) vCard += `URL:${url}\r\n`;
+    
+    if (photoBase64) {
+        vCard += `PHOTO;ENCODING=b;TYPE=JPEG:${photoBase64}\r\n`;
+    }
+    vCard += "END:VCARD\r\n";
 
-    fs.writeFileSync(filePath, vCard);
+    fs.writeFileSync(filePath, vCard, 'utf8');
 
+    // Autodestrucción a los 5 minutos
     setTimeout(() => {
-        if (fs.existsSync(filePath)) {
-            fs.unlinkSync(filePath);
-        }
+        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
     }, 300000);
 
-    // Ajustamos la URL para que siempre apunte al dominio de Render
     res.json({
         success: true,
         fileUrl: `https://generadorqr-api.onrender.com/descargar/${fileName}`
