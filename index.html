@@ -174,7 +174,7 @@
         <div id="cardPreview" class="card-preview-container" style="display: none;">
           <div id="qrcode" class="qrCode"></div>
           <button type="button" id="btn-download" class="btn-download" onclick="downloadQRImage()">
-            <i class="fa-solid fa-download"></i> Descargar Código QR (PNG)
+            <i class="fa-solid fa-download"></i> Descargar Código QR (PNG HD)
           </button>
         </div>
       </div>
@@ -220,6 +220,10 @@
         }
 
         function renderQR(textData, logoVisual) {
+          // Guardamos datos globales para el render HD de descarga
+          window.lastQrTextData = textData;
+          window.lastLogoVisual = logoVisual;
+
           const container = document.getElementById("qrcode");
           container.innerHTML = "";
 
@@ -243,19 +247,42 @@
           document.getElementById("btn-download").style.display = "flex";
         }
 
+        // Descarga optimizada en Alta Definición (600x600 px)
         function downloadQRImage() {
-          const canvas = document.querySelector("#qrcode canvas");
-          if (!canvas) {
+          if (!window.lastQrTextData) {
             alert("Primero debes generar el código QR.");
             return;
           }
-          const imageURL = canvas.toDataURL("image/png");
-          const link = document.createElement("a");
-          link.href = imageURL;
-          link.download = `QR_BusinessCard_${Date.now()}.png`;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
+
+          const hdCanvas = document.createElement("canvas");
+          hdCanvas.width = 600;
+          hdCanvas.height = 600;
+
+          new QRCode(hdCanvas, {
+            text: window.lastQrTextData,
+            width: 600,
+            height: 600,
+            colorDark: "#0f172a",      
+            colorLight: "#ffffff", 
+            correctLevel: QRCode.CorrectLevel.H, 
+            dotScale: 0.85,             
+            po: '#0f172a',             
+            pi: '#2563eb',             
+            logo: window.lastLogoVisual || "",
+            logoWidth: 130,
+            logoHeight: 130,
+            logoBackgroundTransparent: true
+          });
+
+          setTimeout(() => {
+            const imageURL = hdCanvas.toDataURL("image/png");
+            const link = document.createElement("a");
+            link.href = imageURL;
+            link.download = `QR_BusinessCard_HD_${Date.now()}.png`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+          }, 100);
         }
 
         document.getElementById("vcard-form").addEventListener("submit", async function(e) {
