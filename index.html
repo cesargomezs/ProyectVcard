@@ -17,11 +17,48 @@
       .form-section { display: none; }
       .form-section.active { display: block; }
       
-      input[type="text"], input[type="email"], input[type="url"], input[type="tel"], input[type="color"] {
+      input[type="text"], input[type="email"], input[type="url"], input[type="tel"] {
         width: 100%; padding: 11px 14px; margin-top: 5px; margin-bottom: 15px;
         border: 2px solid #cbd5e1; border-radius: 8px; background-color: #ffffff;
         color: #0f172a; font-size: 14px; box-sizing: border-box; transition: 0.2s;
       }
+      
+      input[type="color"] {
+        width: 100%;
+        height: 45px;
+        padding: 4px 8px;
+        margin-top: 5px;
+        margin-bottom: 10px;
+        border: 2px solid #cbd5e1;
+        border-radius: 8px;
+        background-color: #ffffff;
+        cursor: pointer;
+        box-sizing: border-box;
+      }
+
+      /* Estilos para los botones de la paleta rápida de colores */
+      .color-palette {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 15px;
+      }
+      .color-swatch {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        border: 2px solid #cbd5e1;
+        cursor: pointer;
+        transition: transform 0.2s, border-color 0.2s;
+      }
+      .color-swatch:hover {
+        transform: scale(1.1);
+        border-color: #0f172a;
+      }
+      .color-swatch.selected {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+      }
+
       input[type="text"]:focus, input[type="email"]:focus, input[type="url"]:focus, input[type="tel"]:focus, input[type="color"]:focus {
         border-color: #0f172a; outline: none; box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.1);
       }
@@ -31,8 +68,39 @@
       .phone-group select { padding: 11px 10px; border: 2px solid #cbd5e1; border-right: none; border-radius: 8px 0 0 8px; background-color: #f8fafc; color: #0f172a; font-size: 14px; outline: none; cursor: pointer; }
       .phone-group input[type="tel"] { margin: 0; border-radius: 0 8px 8px 0; flex: 1; }
       
-      .btn-download { background: #059669 !important; margin-top: 10px; }
-      .btn-download:hover { background: #047857 !important; }
+      .btn, .btn-download {
+        width: 100%;
+        padding: 12px 14px;
+        margin-top: 5px;
+        margin-bottom: 15px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: bold;
+        box-sizing: border-box;
+        cursor: pointer;
+        border: none;
+        transition: 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      }
+      .btn.primary { background: #0f172a; color: white; }
+      .btn.primary:hover { background: #1e293b; }
+      .btn-download { background: #059669; color: white; display: none; }
+      .btn-download:hover { background: #047857; }
+
+      .card-preview-container {
+        margin-top: 20px;
+        padding: 20px;
+        border-radius: 12px;
+        border: 2px solid #e2e8f0;
+        background-color: #ffffff;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
     </style>
   </head>
   <body>
@@ -55,7 +123,19 @@
         <!-- FORMULARIO 1: vCard -->
         <form id="vcard-form" class="form-section active">
           <p class="label" style="font-weight:bold; color:#0f172a;">Color de Fondo de la Business Card:</p>
-          <input type="color" id="cardBgColor" value="#ffffff" style="height: 45px; padding: 4px; cursor: pointer;">
+          
+          <!-- Paleta de colores rápidos (incluyendo el tono terracota de tu ejemplo) -->
+          <div class="color-palette">
+            <div class="color-swatch" style="background-color: #b48a73;" onclick="setCardColor('#b48a73', this)" title="Terracota Elegante"></div>
+            <div class="color-swatch" style="background-color: #0f172a;" onclick="setCardColor('#0f172a', this)" title="Azul Oscuro Ejecutivo"></div>
+            <div class="color-swatch" style="background-color: #1e3a8a;" onclick="setCardColor('#1e3a8a', this)" title="Azul Rey"></div>
+            <div class="color-swatch" style="background-color: #065f46;" onclick="setCardColor('#065f46', this)" title="Verde Bosque"></div>
+            <div class="color-swatch" style="background-color: #7c2d12;" onclick="setCardColor('#7c2d12', this)" title="Marrón Oscuro"></div>
+            <div class="color-swatch" style="background-color: #ffffff;" onclick="setCardColor('#ffffff', this)" title="Blanco Clásico"></div>
+          </div>
+
+          <!-- Input de color libre por si el usuario quiere otro tono exacto -->
+          <input type="color" id="cardBgColor" value="#b48a73">
 
           <p class="label">Name:</p>
           <input type="text" id="name" placeholder="Ej. Cesar Gomez" required>
@@ -81,38 +161,44 @@
           <input type="text" id="address" placeholder="Ej. Rancho Cucamonga, California">
           
           <p class="label">Web site or Url:</p>
-          <input type="text" id="url" placeholder="Ej. https://viviendoenusa.app"><br>
+          <input type="text" id="url" placeholder="Ej. https://viviendoenusa.app">
           
-          <button type="submit" class="btn primary" id="btn-vcard"><i class="fa-solid fa-qrcode"></i> Generar QR Completo</button><br>
+          <button type="submit" class="btn primary" id="btn-vcard"><i class="fa-solid fa-qrcode"></i> Generar QR Completo</button>
         </form>
 
         <!-- FORMULARIO 2: Enlace Web -->
         <form id="url-form" class="form-section">
           <p class="label">Target URL:</p>
-          <input type="url" id="target-url" placeholder="Ej. https://viviendoenusa.app" required><br>
-          <button type="submit" class="btn primary"><i class="fa-solid fa-qrcode"></i> Generar QR URL</button><br>
+          <input type="url" id="target-url" placeholder="Ej. https://viviendoenusa.app" required>
+          <button type="submit" class="btn primary"><i class="fa-solid fa-qrcode"></i> Generar QR URL</button>
         </form>
 
-        <br>
         <!-- Contenedor del QR -->
-        <div id="qrcode" class="qrCode" style="display: flex; justify-content: center; margin-top: 20px;"></div>
-        
-        <!-- Botón de Descarga (Oculto hasta que se genera el QR) -->
-        <button type="button" id="btn-download" class="btn btn-download" style="display: none;" onclick="downloadQRImage()">
-          <i class="fa-solid fa-download"></i> Descargar Código QR (PNG)
-        </button>
+        <div id="cardPreview" class="card-preview-container" style="display: none;">
+          <div id="qrcode" class="qrCode"></div>
+          <button type="button" id="btn-download" class="btn-download" onclick="downloadQRImage()">
+            <i class="fa-solid fa-download"></i> Descargar Código QR (PNG)
+          </button>
+        </div>
       </div>
     </div>
 
     <!-- SCRIPTS -->
     <script>
+        // Función para cambiar el color mediante los círculos de la paleta rápida
+        function setCardColor(hexColor, element) {
+            document.getElementById("cardBgColor").value = hexColor;
+            document.querySelectorAll(".color-swatch").forEach(el => el.classList.remove("selected"));
+            element.classList.add("selected");
+        }
+
         function switchTab(tab) {
           document.getElementById("vcard-form").classList.toggle("active", tab === 'vcard');
           document.getElementById("url-form").classList.toggle("active", tab === 'url');
           document.querySelectorAll(".tab-btn")[0].classList.toggle("active", tab === 'vcard');
           document.querySelectorAll(".tab-btn")[1].classList.toggle("active", tab === 'url');
           document.getElementById("qrcode").innerHTML = "";
-          document.getElementById("btn-download").style.display = "none"; // Ocultar botón al cambiar de pestaña
+          document.getElementById("cardPreview").style.display = "none";
         }
 
         function getBase64Image(file) {
@@ -145,8 +231,8 @@
 
           new QRCode(container, {
             text: textData,
-            width: 300,
-            height: 300,
+            width: 260,
+            height: 260,
             colorDark: "#0f172a",      
             colorLight: "#ffffff", 
             correctLevel: QRCode.CorrectLevel.H, 
@@ -154,16 +240,15 @@
             po: '#0f172a',             
             pi: '#2563eb',             
             logo: logoVisual || "",
-            logoWidth: 70,
-            logoHeight: 70,
+            logoWidth: 65,
+            logoHeight: 65,
             logoBackgroundTransparent: true
           });
 
-          // Mostrar el botón de descarga una vez generado el QR
-          document.getElementById("btn-download").style.display = "block";
+          document.getElementById("cardPreview").style.display = "flex";
+          document.getElementById("btn-download").style.display = "flex";
         }
 
-        // Función para descargar el QR en formato PNG
         function downloadQRImage() {
           const canvas = document.querySelector("#qrcode canvas");
           if (!canvas) {
@@ -192,6 +277,8 @@
             const email = document.getElementById("email").value.trim();
             const address = document.getElementById("address").value.trim();
             const url = document.getElementById("url").value.trim();
+            
+            // Enviamos el color elegido (ya sea por la paleta rápida o por el selector libre) hacia el backend
             const cardColor = document.getElementById("cardBgColor").value;
             
             const phoneRaw = document.getElementById("phone").value.trim();

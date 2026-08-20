@@ -17,7 +17,11 @@ if (!fs.existsSync(tempFolder)) {
 app.use('/descargar', express.static(tempFolder));
 
 app.post('/api/generar-vcf', (req, res) => {
+    // 1. Aquí capturamos el cardColor que manda el frontend
     const { name, org, phone, email, address, url, cardColor, photoBase64 } = req.body;
+    
+    console.log("Color de la Business Card recibido:", cardColor); // <-- Verifícalo en los logs de Render
+
     const fileName = `contacto_${Date.now()}.vcf`;
     const filePath = path.join(tempFolder, fileName);
 
@@ -25,7 +29,6 @@ app.post('/api/generar-vcf', (req, res) => {
     vCard += `FN:${name}\r\n`;
     vCard += `N:;${name};;;\r\n`;
     
-    // Evitamos duplicar la organización
     if (org && org.trim() !== "") {
         vCard += `ORG:${org.trim()}\r\n`;
     }
@@ -35,7 +38,7 @@ app.post('/api/generar-vcf', (req, res) => {
     if (address) vCard += `ADR;TYPE=WORK:;;${address};;;;\r\n`;
     if (url) vCard += `URL:${url}\r\n`;
     
-    // Inyectamos el color de la Business Card dentro del archivo vCard usando una etiqueta personalizada
+    // 2. Si quieres que el color viaje dentro del archivo vCard como etiqueta personalizada:
     if (cardColor) {
         vCard += `X-CARD-COLOR:${cardColor}\r\n`;
     }
@@ -53,7 +56,8 @@ app.post('/api/generar-vcf', (req, res) => {
 
     res.json({
         success: true,
-        fileUrl: `https://generadorqr-api.onrender.com/descargar/${fileName}`
+        fileUrl: `https://generadorqr-api.onrender.com/descargar/${fileName}`,
+        cardColorReceived: cardColor // Opcional para debug en frontend
     });
 });
 
