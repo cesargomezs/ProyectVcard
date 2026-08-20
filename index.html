@@ -1,109 +1,197 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <link rel="stylesheet" href="/src/styles/main.css" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>::QR::</title>
-    <meta
-      name="description"
-      content="This HTML form allows users to enter their contact information (such as name, phone number, email, company, etc.) to automatically generate a QR code in vCard format. This QR code can be scanned by most mobile phones to add the contact directly to the address book."
-    />
+    <title>::QR Component::</title>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://unpkg.com/easyqrcodejs/dist/easy.qrcode.min.js"></script>
     <script src="https://kit.fontawesome.com/b512089a85.js" crossorigin="anonymous"></script>
 
+    <style>
+      .tab-container { display: flex; gap: 10px; margin-bottom: 20px; }
+      .tab-btn { flex: 1; padding: 10px; border: 2px solid #cbd5e1; background: #f8fafc; cursor: pointer; font-weight: bold; border-radius: 6px; color: #475569; transition: 0.2s; }
+      .tab-btn.active { background: #0f172a; color: white; border-color: #0f172a; }
+      .form-section { display: none; }
+      .form-section.active { display: block; }
+      
+      input[type="text"], input[type="email"], input[type="url"], input[type="tel"] {
+        width: 100%; padding: 11px 14px; margin-top: 5px; margin-bottom: 15px;
+        border: 2px solid #cbd5e1; border-radius: 8px; background-color: #ffffff;
+        color: #0f172a; font-size: 14px; box-sizing: border-box; transition: 0.2s;
+      }
+      input[type="text"]:focus, input[type="email"]:focus, input[type="url"]:focus, input[type="tel"]:focus {
+        border-color: #0f172a; outline: none; box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.1);
+      }
+      input[type="file"] { width: 100%; padding: 12px; margin-top: 5px; margin-bottom: 20px; border: 2px dashed #0f172a; border-radius: 8px; background-color: #f8fafc; color: #0f172a; font-size: 14px; cursor: pointer; box-sizing: border-box; }
+
+      .phone-group {
+        display: flex;
+        align-items: stretch;
+        margin-top: 5px;
+        margin-bottom: 15px;
+      }
+      .phone-group select {
+        padding: 11px 10px;
+        border: 2px solid #cbd5e1;
+        border-right: none;
+        border-radius: 8px 0 0 8px;
+        background-color: #f8fafc;
+        color: #0f172a;
+        font-size: 14px;
+        outline: none;
+        cursor: pointer;
+        transition: 0.2s;
+      }
+      .phone-group select:focus {
+        border-color: #0f172a;
+        z-index: 1;
+      }
+      .phone-group input[type="tel"] {
+        margin: 0; 
+        border-radius: 0 8px 8px 0;
+        flex: 1;
+      }
+    </style>
   </head>
   <body>
     <div class="divVcard">
-      <img src="src/assets/qrFake.jpg" class="imgQr">
-      <h1 style="text-align: center;"> QR Code Generator</h1></img>
-        <br>
-      <p>
-        This HTML form allows users to enter their contact information (such as name, phone number, email, company, etc.) to automatically generate a QR code in vCard format. 
-        This QR code can be scanned by most mobile phones to add the contact directly to the address book.
-        <br>
-        <br>
+      <img src="src/assets/qrFake.jpg" class="imgQr" alt="Banner">
+      <h1 style="text-align: center;">Generador QR Offline</h1>
+      <p style="text-align: center; color: #64748b; font-size: 14px; margin-bottom: 30px;">
+        Generador estático de lectura ultra-rápida. Carga tu logo para personalizar el centro del QR.
       </p>
-          <div class="divVcardForm">
 
-          <h2>Enter your contact information:</h2>
-        
-          <form id="vcard-form">
-        
-            <p class="label">Name:</p><br>
-            <input type="text" id="name" required><br>
-        
-            <p class="label">Organization:</p><br>
-            <input type="text" id="org"><br>
-            
-            <p class="label">Phone:</p><br>
-            <input type="text" id="phone"><br>
-
-            <p class="label">Email:</p><br>
-            <input type="email" id="email"><br>
-            
-            <p class="label">Address:</p><br>
-            <input type="text" id="address"><br>
-
-            <p class="label">Web site or Url:</p><br>
-            <input type="text" id="url"><br><br>
-
-            <button type="submit" class="btn primary"><i class="fa-solid fa-qrcode"></i>Submit</button><br>
-          </form>
-          <br>
-          <br>
-          <div id="qrcode" class="qrCode"></div>
+      <div class="divVcardForm">
+        <div class="tab-container">
+          <button type="button" class="tab-btn active" onclick="switchTab('vcard')"><i class="fa-solid fa-address-book"></i> vCard</button>
+          <button type="button" class="tab-btn" onclick="switchTab('url')"><i class="fa-solid fa-link"></i> Web URL</button>
         </div>
-    </div>
-    <script>
-          const form = document.getElementById("vcard-form");
-    const qrContainer = document.getElementById("qrcode");
 
-    form.addEventListener("submit", function(e) {
-      e.preventDefault();
+        <p class="label" style="font-weight:bold; color:#0f172a;">Logo Central (Decorativo):</p>
+        <input type="file" id="logoFile" accept="image/png, image/jpeg">
 
-      // Recoge los datos del formulario
-      const name = document.getElementById("name").value;
-      const org = document.getElementById("org").value;
-      const phone = document.getElementById("phone").value;
-      const email = document.getElementById("email").value;
-      const address = document.getElementById("address").value;
-      const url = document.getElementById("url").value;
-      
-      const vCard = 
-          `BEGIN:VCARD\n` +
-          `VERSION:3.0\n` +
-          `N:${name.split(" ").slice(-1)[0]};${name.split(" ").slice(0, -1).join(" ")};;;\n` +
-          `FN:${name}\n` +
-          (org ? `ORG:${org}\n` : "") +
-          (phone ? `TEL;TYPE=CELL:${phone}\n` : "") +
-          (email ? `EMAIL;TYPE=INTERNET:${email}\n` : "") +
-          (address ? `ADR;TYPE=home:;;${address};;;;\n` : "") +
-          (url ? `URL:${url}\n` : "") +
-          //(country ? `COUNTRY:${country}\n` : "") +
+        <!-- FORMULARIO 1: vCard -->
+        <form id="vcard-form" class="form-section active">
+          <p class="label">Name:</p>
+          <input type="text" id="name" placeholder="Ej. Cesar ****" required>
           
-          `END:VCARD`;
+          <p class="label">Organization:</p>
+          <input type="text" id="org" placeholder="Ej. Viviendo en USA">
+          
+          <p class="label">Phone:</p>
+          <div class="phone-group">
+            <select id="countryCode">
+              <option value="+1">🇺🇸 +1</option>
+              <option value="+52">🇲🇽 +52</option>
+              <option value="+57">🇨🇴 +57</option>
+              <option value="+34">🇪🇸 +34</option>
+              <option value="+54">🇦🇷 +54</option>
+              <option value="+56">🇨🇱 +56</option>
+            </select>
+            <input type="tel" id="phone" placeholder="Ej. (951) 258-****">
+          </div>
 
-      // Limpia el QR anterior
-      qrContainer.innerHTML = "";
+          <p class="label">Email:</p>
+          <input type="email" id="email" placeholder="Ej. cesar@viviendoenusa.app">
+          
+          <p class="label">Address:</p>
+          <input type="text" id="address" placeholder="Ej. Rancho Cucamonga, California">
+          
+          <p class="label">Web site or Url:</p>
+          <input type="text" id="url" placeholder="Ej. https://viviendoenusa.app"><br>
+          
+          <button type="submit" class="btn primary" id="btn-vcard"><i class="fa-solid fa-qrcode"></i> Generar QR</button><br>
+        </form>
 
-      // Genera el nuevo QR con vCard
-      
-      new QRCode(qrContainer, {
-        text: vCard,
-        width: 256,
-        height: 256,
-        colorDark : "#000000",
-        colorLight : "#ffffff",
-        textAlign: "center",
-        correctLevel : QRCode.CorrectLevel.H
-      });
+        <!-- FORMULARIO 2: Enlace Web -->
+        <form id="url-form" class="form-section">
+          <p class="label">Target URL:</p>
+          <input type="url" id="target-url" placeholder="Ej. https://viviendoenusa.app" required><br>
+          <button type="submit" class="btn primary"><i class="fa-solid fa-qrcode"></i> Generar QR URL</button><br>
+        </form>
 
+        <br>
+        <div id="qrcode" class="qrCode" style="display: flex; justify-content: center; margin-top: 20px;"></div>
+      </div>
+    </div>
 
-    });
+    <script>
+        function switchTab(tab) {
+          document.getElementById("vcard-form").classList.toggle("active", tab === 'vcard');
+          document.getElementById("url-form").classList.toggle("active", tab === 'url');
+          document.querySelectorAll(".tab-btn")[0].classList.toggle("active", tab === 'vcard');
+          document.querySelectorAll(".tab-btn")[1].classList.toggle("active", tab === 'url');
+          document.getElementById("qrcode").innerHTML = "";
+        }
+
+        function getVisualLogo(file) {
+          if (!file) return Promise.resolve(null);
+          return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target.result);
+            reader.readAsDataURL(file);
+          });
+        }
+
+        function renderQR(textData, logoVisual) {
+          const container = document.getElementById("qrcode");
+          container.innerHTML = "";
+
+          new QRCode(container, {
+            text: textData,
+            width: 280,
+            height: 280,
+            colorDark: "#0f172a",      
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.H, 
+            dotScale: 0.85,             
+            po: '#0f172a',             
+            pi: '#2563eb',             
+            logo: logoVisual || "",
+            logoWidth: 65,
+            logoHeight: 65,
+            logoBackgroundTransparent: true
+          });
+        }
+
+        document.getElementById("vcard-form").addEventListener("submit", async function(e) {
+          e.preventDefault();
+
+          const name = document.getElementById("name").value.trim();
+          const org = document.getElementById("org").value.trim();
+          const email = document.getElementById("email").value.trim();
+          const address = document.getElementById("address").value.trim();
+          const url = document.getElementById("url").value.trim();
+          
+          const phoneRaw = document.getElementById("phone").value.trim();
+          const countryCode = document.getElementById("countryCode").value;
+          const fullPhone = phoneRaw ? `${countryCode} ${phoneRaw}` : "";
+          
+          const fileInput = document.getElementById("logoFile");
+          const logoVisual = await getVisualLogo(fileInput.files[0]);
+
+          let vCard = "BEGIN:VCARD\nVERSION:3.0\nFN:" + name + "\nN:;" + name + ";;;\n";
+          if (org) vCard += "ORG:" + org + "\n";
+          if (fullPhone) vCard += "TEL;TYPE=CELL:" + fullPhone + "\n";
+          if (email) vCard += "EMAIL:" + email + "\n";
+          if (address) vCard += "ADR:;;" + address + ";;;;\n";
+          if (url) vCard += "URL:" + url + "\n";
+          vCard += "END:VCARD";
+
+          renderQR(vCard, logoVisual);
+        });
+
+        document.getElementById("url-form").addEventListener("submit", async function(e) {
+          e.preventDefault();
+          const targetUrl = document.getElementById("target-url").value.trim();
+          const fileInput = document.getElementById("logoFile");
+          const logoVisual = await getVisualLogo(fileInput.files[0]);
+          
+          renderQR(targetUrl, logoVisual);
+        });
     </script>
-    
   </body>
 </html>
