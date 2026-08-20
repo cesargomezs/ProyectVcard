@@ -58,7 +58,7 @@ app.post('/api/generar-vcf', (req, res) => {
     // Responder con la URL del archivo
     res.json({
         success: true,
-        fileUrl: `https://qrvcard.onrender.com/descargar/${fileName}`
+        fileUrl: `https://generadorqr-api.onrender.com/descargar/${fileName}`
     });
 });
 

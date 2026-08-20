@@ -217,7 +217,7 @@
             };
 
             // 3. Enviar el JSON a tu servidor en el puerto 3000
-            const response = await fetch('https://qrvcard.onrender.com/api/generar-vcf', {
+            const response = await fetch('https://generadorqr-api.onrender.com/api/generar-vcf', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
