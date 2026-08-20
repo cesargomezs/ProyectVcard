@@ -36,7 +36,6 @@
         box-sizing: border-box;
       }
 
-      /* Estilos para los botones de la paleta rápida de colores */
       .color-palette {
         display: flex;
         gap: 8px;
@@ -124,7 +123,6 @@
         <form id="vcard-form" class="form-section active">
           <p class="label" style="font-weight:bold; color:#0f172a;">Color de Fondo de la Business Card:</p>
           
-          <!-- Paleta de colores rápidos (incluyendo el tono terracota de tu ejemplo) -->
           <div class="color-palette">
             <div class="color-swatch" style="background-color: #b48a73;" onclick="setCardColor('#b48a73', this)" title="Terracota Elegante"></div>
             <div class="color-swatch" style="background-color: #0f172a;" onclick="setCardColor('#0f172a', this)" title="Azul Oscuro Ejecutivo"></div>
@@ -134,7 +132,6 @@
             <div class="color-swatch" style="background-color: #ffffff;" onclick="setCardColor('#ffffff', this)" title="Blanco Clásico"></div>
           </div>
 
-          <!-- Input de color libre por si el usuario quiere otro tono exacto -->
           <input type="color" id="cardBgColor" value="#b48a73">
 
           <p class="label">Name:</p>
@@ -185,7 +182,6 @@
 
     <!-- SCRIPTS -->
     <script>
-        // Función para cambiar el color mediante los círculos de la paleta rápida
         function setCardColor(hexColor, element) {
             document.getElementById("cardBgColor").value = hexColor;
             document.querySelectorAll(".color-swatch").forEach(el => el.classList.remove("selected"));
@@ -212,8 +208,6 @@
                 canvas.width = 200; 
                 canvas.height = 200; 
                 const ctx = canvas.getContext('2d');
-                ctx.fillStyle = "#ffffff"; 
-                ctx.fillRect(0, 0, 200, 200);
                 ctx.drawImage(img, 0, 0, 200, 200);
                 
                 const base64 = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
@@ -277,8 +271,6 @@
             const email = document.getElementById("email").value.trim();
             const address = document.getElementById("address").value.trim();
             const url = document.getElementById("url").value.trim();
-            
-            // Enviamos el color elegido (ya sea por la paleta rápida o por el selector libre) hacia el backend
             const cardColor = document.getElementById("cardBgColor").value;
             
             const phoneRaw = document.getElementById("phone").value.trim();
