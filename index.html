@@ -124,7 +124,7 @@
           <p class="label" style="font-weight:bold; color:#0f172a;">Color de Fondo de la Business Card:</p>
           
           <div class="color-palette">
-            <div class="color-swatch" style="background-color: #b48a73;" onclick="setCardColor('#b48a73', this)" title="Terracota Elegante"></div>
+            <div class="color-swatch selected" style="background-color: #b48a73;" onclick="setCardColor('#b48a73', this)" title="Terracota Elegante"></div>
             <div class="color-swatch" style="background-color: #0f172a;" onclick="setCardColor('#0f172a', this)" title="Azul Oscuro Ejecutivo"></div>
             <div class="color-swatch" style="background-color: #1e3a8a;" onclick="setCardColor('#1e3a8a', this)" title="Azul Rey"></div>
             <div class="color-swatch" style="background-color: #065f46;" onclick="setCardColor('#065f46', this)" title="Verde Bosque"></div>
@@ -174,7 +174,7 @@
         <div id="cardPreview" class="card-preview-container" style="display: none;">
           <div id="qrcode" class="qrCode"></div>
           <button type="button" id="btn-download" class="btn-download" onclick="downloadQRImage()">
-            <i class="fa-solid fa-download"></i> Descargar Código QR (PNG HD)
+            <i class="fa-solid fa-download"></i> Descargar Código QR (WebP HD)
           </button>
         </div>
       </div>
@@ -220,13 +220,14 @@
         }
 
         function renderQR(textData, logoVisual) {
-          // Guardamos datos globales para el render HD de descarga
+          // GUARDAMOS LOS DATOS AQUÍ PARA QUE LA DESCARGA HD PUEDA USARLOS
           window.lastQrTextData = textData;
           window.lastLogoVisual = logoVisual;
 
           const container = document.getElementById("qrcode");
           container.innerHTML = "";
 
+          // Renderizado normal en pantalla (260x260)
           new QRCode(container, {
             text: textData,
             width: 260,
@@ -247,21 +248,23 @@
           document.getElementById("btn-download").style.display = "flex";
         }
 
-        // Descarga optimizada en Alta Definición (600x600 px)
+        // Descarga en Alta Definición real (1000x1000 px) generando el QR nativamente desde cero
         function downloadQRImage() {
           if (!window.lastQrTextData) {
             alert("Primero debes generar el código QR.");
             return;
           }
 
-          const hdCanvas = document.createElement("canvas");
-          hdCanvas.width = 600;
-          hdCanvas.height = 600;
+          // Creamos un canvas temporal invisible a gran resolución (1000x1000 px)
+          const hdContainer = document.createElement("div");
+          hdContainer.style.display = "none";
+          document.body.appendChild(hdContainer);
 
-          new QRCode(hdCanvas, {
+          // Generamos el QR de forma nativa a alta resolución para evitar cualquier pixelación
+          new QRCode(hdContainer, {
             text: window.lastQrTextData,
-            width: 600,
-            height: 600,
+            width: 1000,
+            height: 1000,
             colorDark: "#0f172a",      
             colorLight: "#ffffff", 
             correctLevel: QRCode.CorrectLevel.H, 
@@ -269,20 +272,27 @@
             po: '#0f172a',             
             pi: '#2563eb',             
             logo: window.lastLogoVisual || "",
-            logoWidth: 130,
-            logoHeight: 130,
+            logoWidth: 220, 
+            logoHeight: 220,
             logoBackgroundTransparent: true
           });
 
+          // Damos un breve respiro para que el DOM renderice el canvas interno y lo exportamos en WebP HD
           setTimeout(() => {
-            const imageURL = hdCanvas.toDataURL("image/png");
-            const link = document.createElement("a");
-            link.href = imageURL;
-            link.download = `QR_BusinessCard_HD_${Date.now()}.png`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-          }, 100);
+            const hdCanvas = hdContainer.querySelector("canvas");
+            if (hdCanvas) {
+              const imageURL = hdCanvas.toDataURL("image/webp", 0.95);
+              const link = document.createElement("a");
+              link.href = imageURL;
+              link.download = `QR_BusinessCard_UltraHD_${Date.now()}.webp`;
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+            } else {
+              alert("Error al generar la imagen en alta definición.");
+            }
+            document.body.removeChild(hdContainer);
+          }, 200);
         }
 
         document.getElementById("vcard-form").addEventListener("submit", async function(e) {
@@ -298,6 +308,8 @@
             const email = document.getElementById("email").value.trim();
             const address = document.getElementById("address").value.trim();
             const url = document.getElementById("url").value.trim();
+            
+            // Capturamos el color para mandarlo en el payload
             const cardColor = document.getElementById("cardBgColor").value;
             
             const phoneRaw = document.getElementById("phone").value.trim();
@@ -314,7 +326,7 @@
                 email: email,
                 address: address,
                 url: url,
-                cardColor: cardColor,
+                cardColor: cardColor, // <-- Viaja al backend
                 photoBase64: imageData ? imageData.base64 : null
             };
 
