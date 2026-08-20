@@ -17,12 +17,7 @@ if (!fs.existsSync(tempFolder)) {
 app.use('/descargar', express.static(tempFolder));
 
 app.post('/api/generar-vcf', (req, res) => {
-    // Recibimos todos los datos, incluyendo el color destinado a la Business Card
     const { name, org, phone, email, address, url, cardColor, photoBase64 } = req.body;
-    
-    // Puedes verificar en los logs de Render que el color de la Business Card llegó bien
-    console.log(`Generando vCard para ${name} con color de Business Card: ${cardColor}`);
-
     const fileName = `contacto_${Date.now()}.vcf`;
     const filePath = path.join(tempFolder, fileName);
 
@@ -30,7 +25,7 @@ app.post('/api/generar-vcf', (req, res) => {
     vCard += `FN:${name}\r\n`;
     vCard += `N:;${name};;;\r\n`;
     
-    // SOLUCIÓN DEFINITIVA: El ORG se pone estrictamente una sola vez
+    // Evitamos duplicar la organización
     if (org && org.trim() !== "") {
         vCard += `ORG:${org.trim()}\r\n`;
     }
@@ -40,6 +35,11 @@ app.post('/api/generar-vcf', (req, res) => {
     if (address) vCard += `ADR;TYPE=WORK:;;${address};;;;\r\n`;
     if (url) vCard += `URL:${url}\r\n`;
     
+    // Inyectamos el color de la Business Card dentro del archivo vCard usando una etiqueta personalizada
+    if (cardColor) {
+        vCard += `X-CARD-COLOR:${cardColor}\r\n`;
+    }
+
     if (photoBase64) {
         vCard += `PHOTO;ENCODING=b;TYPE=JPEG:${photoBase64}\r\n`;
     }

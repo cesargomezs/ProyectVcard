@@ -17,12 +17,12 @@
       .form-section { display: none; }
       .form-section.active { display: block; }
       
-      input[type="text"], input[type="email"], input[type="url"], input[type="tel"] {
+      input[type="text"], input[type="email"], input[type="url"], input[type="tel"], input[type="color"] {
         width: 100%; padding: 11px 14px; margin-top: 5px; margin-bottom: 15px;
         border: 2px solid #cbd5e1; border-radius: 8px; background-color: #ffffff;
         color: #0f172a; font-size: 14px; box-sizing: border-box; transition: 0.2s;
       }
-      input[type="text"]:focus, input[type="email"]:focus, input[type="url"]:focus, input[type="tel"]:focus {
+      input[type="text"]:focus, input[type="email"]:focus, input[type="url"]:focus, input[type="tel"]:focus, input[type="color"]:focus {
         border-color: #0f172a; outline: none; box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.1);
       }
       input[type="file"] { width: 100%; padding: 12px; margin-top: 5px; margin-bottom: 20px; border: 2px dashed #0f172a; border-radius: 8px; background-color: #f8fafc; color: #0f172a; font-size: 14px; cursor: pointer; box-sizing: border-box; }
@@ -30,6 +30,9 @@
       .phone-group { display: flex; align-items: stretch; margin-top: 5px; margin-bottom: 15px; }
       .phone-group select { padding: 11px 10px; border: 2px solid #cbd5e1; border-right: none; border-radius: 8px 0 0 8px; background-color: #f8fafc; color: #0f172a; font-size: 14px; outline: none; cursor: pointer; }
       .phone-group input[type="tel"] { margin: 0; border-radius: 0 8px 8px 0; flex: 1; }
+      
+      .btn-download { background: #059669 !important; margin-top: 10px; }
+      .btn-download:hover { background: #047857 !important; }
     </style>
   </head>
   <body>
@@ -49,7 +52,11 @@
         <p class="label" style="font-weight:bold; color:#0f172a;">Foto de Perfil (HD):</p>
         <input type="file" id="logoFile" accept="image/png, image/jpeg">
 
+        <!-- FORMULARIO 1: vCard -->
         <form id="vcard-form" class="form-section active">
+          <p class="label" style="font-weight:bold; color:#0f172a;">Color de Fondo de la Business Card:</p>
+          <input type="color" id="cardBgColor" value="#ffffff" style="height: 45px; padding: 4px; cursor: pointer;">
+
           <p class="label">Name:</p>
           <input type="text" id="name" placeholder="Ej. Cesar Gomez" required>
           
@@ -79,6 +86,7 @@
           <button type="submit" class="btn primary" id="btn-vcard"><i class="fa-solid fa-qrcode"></i> Generar QR Completo</button><br>
         </form>
 
+        <!-- FORMULARIO 2: Enlace Web -->
         <form id="url-form" class="form-section">
           <p class="label">Target URL:</p>
           <input type="url" id="target-url" placeholder="Ej. https://viviendoenusa.app" required><br>
@@ -86,10 +94,17 @@
         </form>
 
         <br>
+        <!-- Contenedor del QR -->
         <div id="qrcode" class="qrCode" style="display: flex; justify-content: center; margin-top: 20px;"></div>
+        
+        <!-- Botón de Descarga (Oculto hasta que se genera el QR) -->
+        <button type="button" id="btn-download" class="btn btn-download" style="display: none;" onclick="downloadQRImage()">
+          <i class="fa-solid fa-download"></i> Descargar Código QR (PNG)
+        </button>
       </div>
     </div>
 
+    <!-- SCRIPTS -->
     <script>
         function switchTab(tab) {
           document.getElementById("vcard-form").classList.toggle("active", tab === 'vcard');
@@ -97,6 +112,7 @@
           document.querySelectorAll(".tab-btn")[0].classList.toggle("active", tab === 'vcard');
           document.querySelectorAll(".tab-btn")[1].classList.toggle("active", tab === 'url');
           document.getElementById("qrcode").innerHTML = "";
+          document.getElementById("btn-download").style.display = "none"; // Ocultar botón al cambiar de pestaña
         }
 
         function getBase64Image(file) {
@@ -142,6 +158,25 @@
             logoHeight: 70,
             logoBackgroundTransparent: true
           });
+
+          // Mostrar el botón de descarga una vez generado el QR
+          document.getElementById("btn-download").style.display = "block";
+        }
+
+        // Función para descargar el QR en formato PNG
+        function downloadQRImage() {
+          const canvas = document.querySelector("#qrcode canvas");
+          if (!canvas) {
+            alert("Primero debes generar el código QR.");
+            return;
+          }
+          const imageURL = canvas.toDataURL("image/png");
+          const link = document.createElement("a");
+          link.href = imageURL;
+          link.download = `QR_BusinessCard_${Date.now()}.png`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
         }
 
         document.getElementById("vcard-form").addEventListener("submit", async function(e) {
@@ -157,6 +192,7 @@
             const email = document.getElementById("email").value.trim();
             const address = document.getElementById("address").value.trim();
             const url = document.getElementById("url").value.trim();
+            const cardColor = document.getElementById("cardBgColor").value;
             
             const phoneRaw = document.getElementById("phone").value.trim();
             const countryCode = document.getElementById("countryCode").value;
@@ -172,6 +208,7 @@
                 email: email,
                 address: address,
                 url: url,
+                cardColor: cardColor,
                 photoBase64: imageData ? imageData.base64 : null
             };
 
