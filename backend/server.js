@@ -1,6 +1,6 @@
 const express = require('express');
 const fs = require('fs');
-const path = path = require('path');
+const path = require('path');
 const cors = require('cors');
 
 const app = express();
@@ -17,17 +17,20 @@ if (!fs.existsSync(tempFolder)) {
 app.use('/descargar', express.static(tempFolder));
 
 app.post('/api/generar-vcf', (req, res) => {
-    const { name, org, phone, email, address, url, photoBase64 } = req.body;
+    // Recibimos todos los datos, incluyendo el color destinado a la Business Card
+    const { name, org, phone, email, address, url, cardColor, photoBase64 } = req.body;
+    
+    // Puedes verificar en los logs de Render que el color de la Business Card llegó bien
+    console.log(`Generando vCard para ${name} con color de Business Card: ${cardColor}`);
+
     const fileName = `contacto_${Date.now()}.vcf`;
     const filePath = path.join(tempFolder, fileName);
 
-    // Usamos \r\n que es el estándar oficial de vCard para evitar conflictos en iOS
     let vCard = "BEGIN:VCARD\r\nVERSION:3.0\r\n";
     vCard += `FN:${name}\r\n`;
-    
-    // Arreglamos la estructura N (Apellido;Nombre;;;) para que iOS no mezcle campos
     vCard += `N:;${name};;;\r\n`;
     
+    // SOLUCIÓN DEFINITIVA: El ORG se pone estrictamente una sola vez
     if (org && org.trim() !== "") {
         vCard += `ORG:${org.trim()}\r\n`;
     }
@@ -44,7 +47,6 @@ app.post('/api/generar-vcf', (req, res) => {
 
     fs.writeFileSync(filePath, vCard, 'utf8');
 
-    // Autodestrucción a los 5 minutos
     setTimeout(() => {
         if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
     }, 300000);
