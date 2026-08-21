@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>::QR Component con Backend::</title>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/easyqrcodejs/dist/easy.qrcode.min.js"></script>
     <script src="https://kit.fontawesome.com/b512089a85.js" crossorigin="anonymous"></script>
 
@@ -182,6 +183,11 @@
 
     <!-- SCRIPTS -->
     <script>
+        // Configuración de Supabase Storage
+        const SUPABASE_URL = 'https://pwznamxpdzwppmpiyizp.supabase.co';
+        const SUPABASE_ANON_KEY = 'TU_ANON_KEY_PUBLICA_AQUI'; // Reemplaza con tu llave anónima pública de Supabase
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
         function setCardColor(hexColor, element) {
             document.getElementById("cardBgColor").value = hexColor;
             document.querySelectorAll(".color-swatch").forEach(el => el.classList.remove("selected"));
@@ -197,37 +203,50 @@
           document.getElementById("cardPreview").style.display = "none";
         }
 
-        function getBase64Image(file) {
+        // Función para leer la imagen y enviarla a Supabase Storage en lugar de usar Base64 pesado
+        async function uploadImageToSupabase(file) {
+          if (!file) return null;
+          try {
+            const fileName = `images/${Date.now()}_${file.name}`;
+            const { data, error } = await supabaseClient.storage
+              .from('QRCode') // El bucket que creaste en Supabase
+              .upload(fileName, file);
+
+            if (error) {
+              console.error("Error subiendo a Supabase:", error);
+              return null;
+            }
+
+            const { data: publicURLData } = supabaseClient.storage
+              .from('QRCode')
+              .getPublicUrl(fileName);
+
+            return publicURLData.publicUrl;
+          } catch (err) {
+            console.error("Excepción al subir imagen:", err);
+            return null;
+          }
+        }
+
+        // Función auxiliar para obtener el DataURL local solo para la vista previa del logo en el QR
+        function getLocalPreviewDataUrl(file) {
           if (!file) return Promise.resolve(null);
           return new Promise((resolve) => {
             const reader = new FileReader();
             reader.onload = function(event) {
-              const img = new Image();
-              img.onload = function() {
-                const canvas = document.createElement('canvas');
-                canvas.width = 200; 
-                canvas.height = 200; 
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, 200, 200);
-                
-                const base64 = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
-                resolve({ base64: base64, dataUrl: event.target.result });
-              };
-              img.src = event.target.result;
+              resolve(event.target.result);
             };
             reader.readAsDataURL(file);
           });
         }
 
         function renderQR(textData, logoVisual) {
-          // GUARDAMOS LOS DATOS AQUÍ PARA QUE LA DESCARGA HD PUEDA USARLOS
           window.lastQrTextData = textData;
           window.lastLogoVisual = logoVisual;
 
           const container = document.getElementById("qrcode");
           container.innerHTML = "";
 
-          // Renderizado normal en pantalla (260x260)
           new QRCode(container, {
             text: textData,
             width: 260,
@@ -248,19 +267,16 @@
           document.getElementById("btn-download").style.display = "flex";
         }
 
-        // Descarga en Alta Definición real (1000x1000 px) generando el QR nativamente desde cero
         function downloadQRImage() {
           if (!window.lastQrTextData) {
             alert("Primero debes generar el código QR.");
             return;
           }
 
-          // Creamos un canvas temporal invisible a gran resolución (1000x1000 px)
           const hdContainer = document.createElement("div");
           hdContainer.style.display = "none";
           document.body.appendChild(hdContainer);
 
-          // Generamos el QR de forma nativa a alta resolución para evitar cualquier pixelación
           new QRCode(hdContainer, {
             text: window.lastQrTextData,
             width: 1000,
@@ -277,7 +293,6 @@
             logoBackgroundTransparent: true
           });
 
-          // Damos un breve respiro para que el DOM renderice el canvas interno y lo exportamos en WebP HD
           setTimeout(() => {
             const hdCanvas = hdContainer.querySelector("canvas");
             if (hdCanvas) {
@@ -299,7 +314,7 @@
           e.preventDefault();
           const btn = document.getElementById("btn-vcard");
           const originalText = btn.innerHTML;
-          btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Conectando al Servidor...`;
+          btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Subiendo imagen y guardando...`;
           btn.disabled = true;
 
           try {
@@ -308,8 +323,6 @@
             const email = document.getElementById("email").value.trim();
             const address = document.getElementById("address").value.trim();
             const url = document.getElementById("url").value.trim();
-            
-            // Capturamos el color para mandarlo en el payload
             const cardColor = document.getElementById("cardBgColor").value;
             
             const phoneRaw = document.getElementById("phone").value.trim();
@@ -317,7 +330,13 @@
             const fullPhone = phoneRaw ? `${countryCode} ${phoneRaw}` : "";
             
             const fileInput = document.getElementById("logoFile");
-            const imageData = await getBase64Image(fileInput.files[0]);
+            const selectedFile = fileInput.files[0];
+
+            // 1. Subimos la foto a Supabase Storage y obtenemos la URL pública
+            const photoUrl = await uploadImageToSupabase(selectedFile);
+            
+            // 2. Obtenemos el dataUrl local solo para que el QR renderice el logo inmediatamente en pantalla
+            const logoVisual = await getLocalPreviewDataUrl(selectedFile);
 
             const payload = {
                 name: name,
@@ -326,8 +345,8 @@
                 email: email,
                 address: address,
                 url: url,
-                cardColor: cardColor, // <-- Viaja al backend
-                photoBase64: imageData ? imageData.base64 : null
+                cardColor: cardColor,
+                photoUrl: photoUrl // Enviamos la URL ligera en lugar de Base64
             };
 
             const response = await fetch('https://generadorqr-api.onrender.com/api/generar-vcf', {
@@ -339,7 +358,7 @@
             const data = await response.json();
 
             if (data.success) {
-                renderQR(data.fileUrl, imageData ? imageData.dataUrl : null);
+                renderQR(data.fileUrl, logoVisual);
             } else {
                 alert("Error al generar el contacto en el servidor.");
             }
@@ -356,9 +375,9 @@
           e.preventDefault();
           const targetUrl = document.getElementById("target-url").value.trim();
           const fileInput = document.getElementById("logoFile");
-          const imageData = await getBase64Image(fileInput.files[0]);
+          const logoVisual = await getLocalPreviewDataUrl(fileInput.files[0]);
           
-          renderQR(targetUrl, imageData ? imageData.dataUrl : null);
+          renderQR(targetUrl, logoVisual);
         });
     </script>
   </body>
