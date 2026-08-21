@@ -1,7 +1,9 @@
+require('dotenv').config(); // <--- ¡Esta línea es la que lee tu .env!
+console.log("🔍 DATABASE_URL leída:", process.env.DATABASE_URL); // <--- Agregá esto
 const express = require('express');
-const fs = require('fs');
-const path = require('path');
 const cors = require('cors');
+const crypto = require('crypto');
+const { Pool } = require('pg');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -9,59 +11,76 @@ const PORT = process.env.PORT || 3000;
 app.use(cors({ origin: "*" }));
 app.use(express.json({ limit: '10mb' }));
 
-const tempFolder = path.join(__dirname, 'public');
-if (!fs.existsSync(tempFolder)) {
-    fs.mkdirSync(tempFolder);
-}
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
-app.use('/descargar', express.static(tempFolder));
+const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: {
+        rejectUnauthorized: false
+    }
+});
 
-app.post('/api/generar-vcf', (req, res) => {
-    // 1. Extraemos 'cardColor' junto con los demás datos que mandó el frontend
+// 1. RUTA PARA GUARDAR LOS DATOS (Llamada por tu frontend al hacer clic en generar)
+app.post('/api/generar-vcf', async (req, res) => {
     const { name, org, phone, email, address, url, cardColor, photoBase64 } = req.body;
-    
-    // Verificamos en la consola del servidor que el color llegó perfectamente
-    console.log("¡Color de Business Card recibido con éxito:", cardColor);
+    const uniqueId = crypto.randomUUID();
 
-    const fileName = `contacto_${Date.now()}.vcf`;
-    const filePath = path.join(tempFolder, fileName);
+    try {
+        const query = `
+            INSERT INTO contacts (id, name, org, phone, email, address, url, card_color, photo_base64)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        `;
+        await pool.query(query, [uniqueId, name, org, phone, email, address, url, cardColor, photoBase64]);
 
-    let vCard = "BEGIN:VCARD\r\nVERSION:3.0\r\n";
-    vCard += `FN:${name}\r\n`;
-    vCard += `N:;${name};;;\r\n`;
-    
-    if (org && org.trim() !== "") {
-        vCard += `ORG:${org.trim()}\r\n`;
+        res.json({
+            success: true,
+            // Esta es la URL permanente que irá dentro del código QR
+            fileUrl: `https://generadorqr-api.onrender.com/api/contacto/${uniqueId}`,
+            savedColor: cardColor
+        });
+    } catch (error) {
+        console.error("Error guardando en BD:", error);
+        res.status(500).json({ success: false, error: 'Error interno del servidor' });
     }
-    
-    if (phone) vCard += `TEL;TYPE=CELL:${phone}\r\n`;
-    if (email) vCard += `EMAIL;TYPE=WORK:${email}\r\n`;
-    if (address) vCard += `ADR;TYPE=WORK:;;${address};;;;\r\n`;
-    if (url) vCard += `URL:${url}\r\n`;
-    
-    // 2. Si quieres que el color se guarde dentro del archivo .vcf como una etiqueta personalizada:
-    if (cardColor) {
-        vCard += `X-CARD-COLOR:${cardColor}\r\n`;
+});
+
+// 2. RUTA PARA DESCARGAR LA VCARD (Se ejecuta automáticamente al escanear el QR)
+app.get('/api/contacto/:id', async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const result = await pool.query('SELECT * FROM contacts WHERE id = $1', [id]);
+        
+        if (result.rows.length === 0) {
+            return res.status(404).send('El contacto no existe o fue eliminado.');
+        }
+
+        const user = result.rows[0];
+
+        // Armamos el texto de la vCard directamente al vuelo desde la base de datos
+        let vCard = "BEGIN:VCARD\r\nVERSION:3.0\r\n";
+        vCard += `FN:${user.name}\r\n`;
+        vCard += `N:;${user.name};;;\r\n`;
+        if (user.org) vCard += `ORG:${user.org}\r\n`;
+        if (user.phone) vCard += `TEL;TYPE=CELL:${user.phone}\r\n`;
+        if (user.email) vCard += `EMAIL;TYPE=WORK:${user.email}\r\n`;
+        if (user.address) vCard += `ADR;TYPE=WORK:;;${user.address};;;;\r\n`;
+        if (user.url) vCard += `URL:${user.url}\r\n`;
+        if (user.card_color) vCard += `X-CARD-COLOR:${user.card_color}\r\n`;
+        if (user.photo_base64) vCard += `PHOTO;ENCODING=b;TYPE=JPEG:${user.photo_base64}\r\n`;
+        vCard += "END:VCARD\r\n";
+
+        // Forzamos al dispositivo a descargarlo como archivo de contacto real
+        res.setHeader('Content-Type', 'text/vcard');
+        res.setHeader('Content-Disposition', `attachment; filename="contacto_${id}.vcf"`);
+        res.send(vCard);
+
+    } catch (error) {
+        console.error("Error consultando la BD:", error);
+        res.status(500).send('Error interno del servidor');
     }
-
-    if (photoBase64) {
-        vCard += `PHOTO;ENCODING=b;TYPE=JPEG:${photoBase64}\r\n`;
-    }
-    vCard += "END:VCARD\r\n";
-
-    fs.writeFileSync(filePath, vCard, 'utf8');
-
-    setTimeout(() => {
-        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-    }, 300000);
-
-    res.json({
-        success: true,
-        fileUrl: `https://generadorqr-api.onrender.com/descargar/${fileName}`,
-        savedColor: cardColor // Devolvemos el color en la respuesta para confirmar
-    });
 });
 
 app.listen(PORT, () => {
-    console.log(`Servidor rodando en puerto ${PORT}`);
+    console.log(`Servidor rodando con PostgreSQL en puerto ${PORT}`);
 });
