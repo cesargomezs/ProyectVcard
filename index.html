@@ -330,11 +330,11 @@
                 photoBase64: imageData ? imageData.base64 : null
             };
 
-            const response = await fetch('http://localhost:3000/api/generar-vcf', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
-});
+            const response = await fetch('https://generadorqr-api.onrender.com/api/generar-vcf', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
 
             const data = await response.json();
 
