@@ -12,6 +12,7 @@
     <script src="https://kit.fontawesome.com/b512089a85.js" crossorigin="anonymous"></script>
 
     <style>
+      /* Tus estilos están perfectos, los dejamos intactos */
       .tab-container { display: flex; gap: 10px; margin-bottom: 20px; }
       .tab-btn { flex: 1; padding: 10px; border: 2px solid #cbd5e1; background: #f8fafc; cursor: pointer; font-weight: bold; border-radius: 6px; color: #475569; transition: 0.2s; }
       .tab-btn.active { background: #0f172a; color: white; border-color: #0f172a; }
@@ -152,8 +153,9 @@
             <input type="tel" id="phone" placeholder="Ej. 951****">
           </div>
 
-          <p class="label">Email:</p>
-          <input type="email" id="email" placeholder="Ej. *****@viviendoenusa.app">
+          <!-- ¡AQUÍ ESTÁ EL CAMBIO CLAVE! El correo ahora es required -->
+          <p class="label">Email (Obligatorio para actualizar tu perfil):</p>
+          <input type="email" id="email" placeholder="Ej. *****@viviendoenusa.app" required>
           
           <p class="label">Address:</p>
           <input type="text" id="address" placeholder="Ej. Rancho Cucamonga, California">
@@ -161,7 +163,7 @@
           <p class="label">Web site or Url:</p>
           <input type="text" id="url" placeholder="Ej. https://viviendoenusa.app">
           
-          <button type="submit" class="btn primary" id="btn-vcard"><i class="fa-solid fa-qrcode"></i> Generar QR Completo</button>
+          <button type="submit" class="btn primary" id="btn-vcard"><i class="fa-solid fa-qrcode"></i> Generar / Actualizar QR</button>
         </form>
 
         <!-- FORMULARIO 2: Enlace Web -->
@@ -294,7 +296,7 @@
           e.preventDefault();
           const btn = document.getElementById("btn-vcard");
           const originalText = btn.innerHTML;
-          btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Conectando al Servidor Local...`;
+          btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Guardando Perfil...`;
           btn.disabled = true;
 
           try {
@@ -323,7 +325,6 @@
                 photoBase64: imageData ? `data:image/jpeg;base64,${imageData.base64}` : null
             };
 
-            // Apuntando al servidor local para pruebas
             const response = await fetch('http://localhost:3000/api/generar-vcf', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -333,9 +334,11 @@
             const data = await response.json();
 
             if (data.success) {
-                // Ajustamos la URL del QR devuelta para que apunte al entorno local y puedas probar la descarga
-                const localFileUrl = data.fileUrl.replace('https://generadorqr-api.onrender.com', 'http://localhost:3000');
-                renderQR(localFileUrl, imageData ? imageData.dataUrl : null);
+                // Notificamos al usuario del éxito (Opcional, pero da buena experiencia)
+                console.log("¡Éxito! El contacto fue guardado/actualizado correctamente.");
+                
+                // Usamos directamente la fileUrl que ya viene lista del backend
+                renderQR(data.fileUrl, imageData ? imageData.dataUrl : null);
             } else {
                 alert("Error al generar el contacto en el servidor.");
             }
