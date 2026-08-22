@@ -143,25 +143,18 @@ app.get('/api/contacto/:id', async (req, res) => {
         if (user.address) vCard += `ADR;TYPE=WORK:;;${user.address};;;;\r\n`;
         if (user.url) vCard += `URL:${user.url}\r\n`;
         
-       // 🔥 EL TRUCO DEFINITIVO PARA iOS (Line Folding) 🔥
-       if (user.photo_url) {
+        // 🔥 EL TRUCO DEFINITIVO PARA iOS (Line Folding) 🔥
+        if (user.photo_url) {
             try {
-                // Descargamos la foto de Supabase
                 const imgResponse = await fetch(user.photo_url);
                 const arrayBuffer = await imgResponse.arrayBuffer();
                 const buffer = Buffer.from(arrayBuffer);
                 const base64Photo = buffer.toString('base64');
                 
-                // ¡LA MAGIA!: Cortamos la cadena gigante cada 74 caracteres
-                // y los unimos con un salto de línea (\r\n) y un espacio.
                 const foldedPhoto = base64Photo.match(/.{1,74}/g).join('\r\n ');
-                
-                // Inyectamos la foto con el formato exacto que exige Apple
                 vCard += `PHOTO;ENCODING=b;TYPE=JPEG:${foldedPhoto}\r\n`;
-                
             } catch (imgError) {
                 console.error("Error descargando la foto para la vCard:", imgError);
-                // Plan B por si falla la descarga
                 vCard += `PHOTO;TYPE=JPEG;VALUE=URI:${user.photo_url}\r\n`;
             }
         }
