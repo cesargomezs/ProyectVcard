@@ -170,3 +170,8 @@ app.get('/api/contacto/:id', async (req, res) => {
         res.status(500).send('Error interno del servidor');
     }
 });
+
+// INICIAR EL SERVIDOR
+app.listen(PORT, () => {
+    console.log(`🚀 Servidor rodando a toda máquina en el puerto ${PORT}`);
+});
