@@ -111,7 +111,7 @@ app.post('/api/generar-vcf', async (req, res) => {
         // Respondemos al frontend
         res.json({
             success: true,
-            fileUrl: `http://localhost:3000/api/contacto/${uniqueId}`,
+            fileUrl: `https://generadorqr-api.onrender.com/api/contacto/${uniqueId}`,
             savedColor: cardColor
         });
 
