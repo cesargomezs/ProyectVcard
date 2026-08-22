@@ -30,7 +30,6 @@ const supabase = createClient(
     process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
 );
 
-// RUTA 1: Recibe los datos, sube la foto a Supabase y guarda la URL en la BD
 // RUTA 1: Recibe los datos, sube/actualiza la foto y guarda en la BD
 app.post('/api/generar-vcf', async (req, res) => {
     const { name, org, phone, email, address, url, cardColor, photoBase64 } = req.body;
@@ -122,7 +121,7 @@ app.post('/api/generar-vcf', async (req, res) => {
     }
 });
 
-// RUTA 2: Descarga la vCard al escanear el QR con la foto de Supabase incluida
+// RUTA 2: Descarga la vCard al escanear el QR con la foto incluida
 app.get('/api/contacto/:id', async (req, res) => {
     const { id } = req.params;
 
@@ -144,10 +143,17 @@ app.get('/api/contacto/:id', async (req, res) => {
         if (user.address) vCard += `ADR;TYPE=WORK:;;${user.address};;;;\r\n`;
         if (user.url) vCard += `URL:${user.url}\r\n`;
         if (user.card_color) vCard += `X-CARD-COLOR:${user.card_color}\r\n`;
-        if (user.photo_url) vCard += `PHOTO;TYPE=JPEG:${user.photo_url}\r\n`;
+        
+        // 🔥 EL CAMBIO CLAVE ESTÁ AQUÍ 🔥
+        // Agregamos VALUE=URI para que iOS y Android entiendan que es un enlace de Supabase
+        if (user.photo_url) {
+            vCard += `PHOTO;TYPE=JPEG;VALUE=URI:${user.photo_url}\r\n`;
+        }
+        
         vCard += "END:VCARD\r\n";
 
-        res.setHeader('Content-Type', 'text/vcard');
+        // Aseguramos formato UTF-8 para que no haya problemas con tildes o caracteres
+        res.setHeader('Content-Type', 'text/vcard; charset=utf-8');
         res.setHeader('Content-Disposition', `attachment; filename="contacto_${id}.vcf"`);
         res.send(vCard);
 
@@ -155,8 +161,4 @@ app.get('/api/contacto/:id', async (req, res) => {
         console.error("Error consultando la BD:", error);
         res.status(500).send('Error interno del servidor');
     }
-});
-
-app.listen(PORT, () => {
-    console.log(`Servidor rodando con PostgreSQL en puerto ${PORT}`);
 });
