@@ -142,17 +142,27 @@ app.get('/api/contacto/:id', async (req, res) => {
         if (user.email) vCard += `EMAIL;TYPE=WORK:${user.email}\r\n`;
         if (user.address) vCard += `ADR;TYPE=WORK:;;${user.address};;;;\r\n`;
         if (user.url) vCard += `URL:${user.url}\r\n`;
-        if (user.card_color) vCard += `X-CARD-COLOR:${user.card_color}\r\n`;
         
-        // 🔥 EL CAMBIO CLAVE ESTÁ AQUÍ 🔥
-        // Agregamos VALUE=URI para que iOS y Android entiendan que es un enlace de Supabase
+        // 🔥 EL TRUCO PARA iOS: Descargar la imagen y meterla en Base64 🔥
         if (user.photo_url) {
-            vCard += `PHOTO;TYPE=JPEG;VALUE=URI:${user.photo_url}\r\n`;
+            try {
+                // El servidor descarga la foto de Supabase rápidamente
+                const imgResponse = await fetch(user.photo_url);
+                const arrayBuffer = await imgResponse.arrayBuffer();
+                const buffer = Buffer.from(arrayBuffer);
+                const base64Photo = buffer.toString('base64');
+                
+                // La inyectamos directamente en el archivo VCF (Apple no podrá ignorarla)
+                vCard += `PHOTO;ENCODING=b;TYPE=JPEG:${base64Photo}\r\n`;
+            } catch (imgError) {
+                console.error("Error descargando la foto para la vCard:", imgError);
+                // Si algo falla, ponemos la URL como plan B
+                vCard += `PHOTO;TYPE=JPEG;VALUE=URI:${user.photo_url}\r\n`;
+            }
         }
         
         vCard += "END:VCARD\r\n";
 
-        // Aseguramos formato UTF-8 para que no haya problemas con tildes o caracteres
         res.setHeader('Content-Type', 'text/vcard; charset=utf-8');
         res.setHeader('Content-Disposition', `attachment; filename="contacto_${id}.vcf"`);
         res.send(vCard);
